@@ -283,6 +283,67 @@ class SongHandler(AbletonOSCHandler):
         self.osc_server.add_handler("/live/song/start_listen/beat", start_beat_listener)
         self.osc_server.add_handler("/live/song/stop_listen/beat", stop_beat_listener)
 
+        #--------------------------------------------------------------------------------
+        # Listeners for /live/song/get/tracks and /live/song/get/scenes
+        # These fire when tracks/scenes are added, removed, or reordered
+        #--------------------------------------------------------------------------------
+        def start_listen_tracks(params: Tuple[Any] = ()):
+            def tracks_changed():
+                self.osc_server.send("/live/song/get/tracks", (len(self.song.tracks),))
+
+            listener_key = ('tracks', ())
+            if listener_key in self.listener_functions:
+                stop_listen_tracks(params)
+
+            self.logger.info("Adding tracks listener")
+            self.song.add_tracks_listener(tracks_changed)
+            self.listener_functions[listener_key] = tracks_changed
+            self.listener_objects[listener_key] = self.song
+            # Send initial value
+            tracks_changed()
+
+        def stop_listen_tracks(params: Tuple[Any] = ()):
+            listener_key = ('tracks', ())
+            if listener_key in self.listener_functions:
+                self.logger.info("Removing tracks listener")
+                try:
+                    self.song.remove_tracks_listener(self.listener_functions[listener_key])
+                    del self.listener_functions[listener_key]
+                    del self.listener_objects[listener_key]
+                except Exception as e:
+                    self.logger.warning("Exception removing tracks listener: %s" % e)
+
+        def start_listen_scenes(params: Tuple[Any] = ()):
+            def scenes_changed():
+                self.osc_server.send("/live/song/get/scenes", (len(self.song.scenes),))
+
+            listener_key = ('scenes', ())
+            if listener_key in self.listener_functions:
+                stop_listen_scenes(params)
+
+            self.logger.info("Adding scenes listener")
+            self.song.add_scenes_listener(scenes_changed)
+            self.listener_functions[listener_key] = scenes_changed
+            self.listener_objects[listener_key] = self.song
+            # Send initial value
+            scenes_changed()
+
+        def stop_listen_scenes(params: Tuple[Any] = ()):
+            listener_key = ('scenes', ())
+            if listener_key in self.listener_functions:
+                self.logger.info("Removing scenes listener")
+                try:
+                    self.song.remove_scenes_listener(self.listener_functions[listener_key])
+                    del self.listener_functions[listener_key]
+                    del self.listener_objects[listener_key]
+                except Exception as e:
+                    self.logger.warning("Exception removing scenes listener: %s" % e)
+
+        self.osc_server.add_handler("/live/song/start_listen/tracks", start_listen_tracks)
+        self.osc_server.add_handler("/live/song/stop_listen/tracks", stop_listen_tracks)
+        self.osc_server.add_handler("/live/song/start_listen/scenes", start_listen_scenes)
+        self.osc_server.add_handler("/live/song/stop_listen/scenes", stop_listen_scenes)
+
     def current_song_time_changed(self):
         #--------------------------------------------------------------------------------
         # If song has rewound or skipped to next beat, sent a /live/beat message
@@ -298,3 +359,21 @@ class SongHandler(AbletonOSCHandler):
             self.song.remove_current_song_time_listener(self.current_song_time_changed)
         except:
             pass
+        # Clean up tracks listener
+        listener_key = ('tracks', ())
+        if listener_key in self.listener_functions:
+            try:
+                self.song.remove_tracks_listener(self.listener_functions[listener_key])
+                del self.listener_functions[listener_key]
+                del self.listener_objects[listener_key]
+            except:
+                pass
+        # Clean up scenes listener
+        listener_key = ('scenes', ())
+        if listener_key in self.listener_functions:
+            try:
+                self.song.remove_scenes_listener(self.listener_functions[listener_key])
+                del self.listener_functions[listener_key]
+                del self.listener_objects[listener_key]
+            except:
+                pass

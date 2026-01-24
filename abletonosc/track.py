@@ -102,6 +102,54 @@ class TrackHandler(AbletonOSCHandler):
         self.osc_server.add_handler("/live/track/get/send", create_track_callback(track_get_send))
         self.osc_server.add_handler("/live/track/set/send", create_track_callback(track_set_send))
 
+        #--------------------------------------------------------------------------------
+        # Send value listeners
+        # Sends are DeviceParameter objects on mixer_device, same as volume/panning
+        #--------------------------------------------------------------------------------
+        def track_start_listen_send(track, params):
+            track_id = params[0]
+            send_id = params[1]
+
+            try:
+                send_param = track.mixer_device.sends[send_id]
+            except IndexError:
+                self.logger.warning("Invalid send_id %d for track %d" % (send_id, track_id))
+                return
+
+            def send_changed():
+                self.osc_server.send("/live/track/get/send", (track_id, send_id, send_param.value))
+
+            listener_key = ('send', (track_id, send_id))
+            if listener_key in self.listener_functions:
+                track_stop_listen_send(track, params)
+
+            self.logger.info("Adding send listener for track %d send %d" % (track_id, send_id))
+            send_param.add_value_listener(send_changed)
+            self.listener_functions[listener_key] = send_changed
+            self.listener_objects[listener_key] = send_param
+            # Send initial value
+            send_changed()
+
+        def track_stop_listen_send(track, params):
+            track_id = params[0]
+            send_id = params[1]
+
+            listener_key = ('send', (track_id, send_id))
+            if listener_key in self.listener_functions:
+                self.logger.info("Removing send listener for track %d send %d" % (track_id, send_id))
+                try:
+                    send_param = track.mixer_device.sends[send_id]
+                    send_param.remove_value_listener(self.listener_functions[listener_key])
+                    del self.listener_functions[listener_key]
+                    del self.listener_objects[listener_key]
+                except Exception as e:
+                    self.logger.warning("Exception removing send listener: %s" % e)
+
+        self.osc_server.add_handler("/live/track/start_listen/send",
+            create_track_callback(track_start_listen_send, include_track_id=True))
+        self.osc_server.add_handler("/live/track/stop_listen/send",
+            create_track_callback(track_stop_listen_send, include_track_id=True))
+
         def track_delete_clip(track, params: Tuple[Any]):
             clip_index, = params
             track.clip_slots[clip_index].delete_clip()
@@ -272,3 +320,17 @@ class TrackHandler(AbletonOSCHandler):
             del self.listener_functions[listener_key]
         else:
             self.logger.warning("No listener function found for property: %s (%s)" % (prop, str(params)))
+
+    def clear_api(self):
+        # Clean up send listeners before parent clear_api
+        # (parent's _clear_listeners would try to call remove_send_listener instead of remove_value_listener)
+        for listener_key in list(self.listener_functions.keys()):
+            if listener_key[0] == 'send':
+                try:
+                    send_param = self.listener_objects[listener_key]
+                    send_param.remove_value_listener(self.listener_functions[listener_key])
+                    del self.listener_functions[listener_key]
+                    del self.listener_objects[listener_key]
+                except Exception as e:
+                    self.logger.warning("Exception removing send listener: %s" % e)
+        super().clear_api()

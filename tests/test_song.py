@@ -197,3 +197,65 @@ def test_song_undo_redo(client):
     wait_one_tick()
     assert client.query("/live/song/get/num_scenes") == (9,)
     client.send_message("/live/song/delete_scene", [8])
+
+#--------------------------------------------------------------------------------
+# Test song listeners - tracks and scenes
+#--------------------------------------------------------------------------------
+
+def test_song_listen_tracks(client):
+    """Test tracks listener fires on track add/delete."""
+    # Start listener - should get initial track count
+    client.send_message("/live/song/start_listen/tracks")
+    initial = client.await_message("/live/song/get/tracks", TICK_DURATION * 2)
+    assert initial is not None
+    initial_count = initial[0]
+
+    # Add track
+    client.send_message("/live/song/create_midi_track", [-1])
+    wait_one_tick()
+    wait_one_tick()
+    wait_one_tick()
+
+    response = client.await_message("/live/song/get/tracks", TICK_DURATION * 3)
+    assert response is not None
+    assert response[0] == initial_count + 1
+
+    # Delete track to clean up
+    client.send_message("/live/song/delete_track", [initial_count])
+    wait_one_tick()
+    wait_one_tick()
+    wait_one_tick()
+
+    response = client.await_message("/live/song/get/tracks", TICK_DURATION * 3)
+    assert response is not None
+    assert response[0] == initial_count
+
+    client.send_message("/live/song/stop_listen/tracks")
+
+def test_song_listen_scenes(client):
+    """Test scenes listener fires on scene add/delete."""
+    # Start listener - should get initial scene count
+    client.send_message("/live/song/start_listen/scenes")
+    initial = client.await_message("/live/song/get/scenes", TICK_DURATION * 2)
+    assert initial is not None
+    initial_count = initial[0]
+
+    # Add scene
+    client.send_message("/live/song/create_scene", [-1])
+    wait_one_tick()
+    wait_one_tick()
+
+    response = client.await_message("/live/song/get/scenes", TICK_DURATION * 3)
+    assert response is not None
+    assert response[0] == initial_count + 1
+
+    # Delete scene to clean up
+    client.send_message("/live/song/delete_scene", [initial_count])
+    wait_one_tick()
+    wait_one_tick()
+
+    response = client.await_message("/live/song/get/scenes", TICK_DURATION * 3)
+    assert response is not None
+    assert response[0] == initial_count
+
+    client.send_message("/live/song/stop_listen/scenes")

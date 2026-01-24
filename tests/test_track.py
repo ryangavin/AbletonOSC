@@ -45,6 +45,48 @@ def test_track_get_send(client):
         wait_one_tick()
         assert client.query("/live/track/get/send", (track_id, send_id)) == (track_id, send_id, value,)
 
+def test_track_listen_send(client):
+    """Test send listener fires on send value change."""
+    track_id = 0
+    send_id = 0
+
+    # Reset to known value first
+    client.send_message("/live/track/set/send", [track_id, send_id, 0.0])
+    wait_one_tick()
+
+    # Start listener - should get initial value
+    client.send_message("/live/track/start_listen/send", [track_id, send_id])
+    initial = client.await_message("/live/track/get/send", TICK_DURATION * 2)
+    assert initial is not None
+    assert initial[0] == track_id
+    assert initial[1] == send_id
+    # initial[2] is the value
+
+    # Change value
+    new_value = 0.75
+    client.send_message("/live/track/set/send", [track_id, send_id, new_value])
+    wait_one_tick()
+
+    response = client.await_message("/live/track/get/send", TICK_DURATION * 2)
+    assert response is not None
+    assert response[0] == track_id
+    assert response[1] == send_id
+    assert abs(response[2] - new_value) < 0.01
+
+    # Change to another value
+    new_value = 0.25
+    client.send_message("/live/track/set/send", [track_id, send_id, new_value])
+    wait_one_tick()
+
+    response = client.await_message("/live/track/get/send", TICK_DURATION * 2)
+    assert response is not None
+    assert abs(response[2] - new_value) < 0.01
+
+    # Cleanup
+    client.send_message("/live/track/stop_listen/send", [track_id, send_id])
+    client.send_message("/live/track/set/send", [track_id, send_id, 0.0])
+    wait_one_tick()
+
 #--------------------------------------------------------------------------------
 # Test track properties - clips
 #--------------------------------------------------------------------------------
