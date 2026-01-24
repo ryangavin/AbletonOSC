@@ -191,6 +191,15 @@ Queries tracks 0..11, and returns a long list of values comprising:
 
 To request a status message to be sent to the client on each beat, call `/live/song/start_listen/beat`. Every beat, a reply will be sent to `/live/song/get/beat`, with an int parameter containing the current beat number. To stop listening for beat events, call `/live/song/stop_listen/beat`.
 
+### Track and scene count listeners
+
+| Address                         | Query params | Response params | Description                                                                 |
+|:--------------------------------|:-------------|:----------------|:----------------------------------------------------------------------------|
+| /live/song/start_listen/tracks  |              | num_tracks      | Start listening for track count changes. Fires when tracks are added/removed/reordered. |
+| /live/song/stop_listen/tracks   |              |                 | Stop listening for track count changes.                                     |
+| /live/song/start_listen/scenes  |              | num_scenes      | Start listening for scene count changes. Fires when scenes are added/removed/reordered. |
+| /live/song/stop_listen/scenes   |              |                 | Stop listening for scene count changes.                                     |
+
 </details>
 
 ---
@@ -296,6 +305,13 @@ To query the properties of multiple tracks, see [Song: Properties of cue points,
 | /live/track/set/send                     | track_id, send_id, value |                 | Set track send                    |
 | /live/track/set/solo                     | track_id, solo           |                 | Set track solo (1=on, 0=off)      |
 | /live/track/set/volume                   | track_id, volume         |                 | Set track volume                  |
+
+#### Send listeners
+
+| Address                          | Query params      | Response params          | Description                                                    |
+|:---------------------------------|:------------------|:-------------------------|:---------------------------------------------------------------|
+| /live/track/start_listen/send    | track_id, send_id | track_id, send_id, value | Start listening for send value changes. Fires on value change. |
+| /live/track/stop_listen/send     | track_id, send_id |                          | Stop listening for send value changes.                         |
 
 ### Track: Properties of multiple clips
 
