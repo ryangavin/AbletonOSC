@@ -210,22 +210,14 @@ def test_song_listen_tracks(client):
     assert initial is not None
     initial_count = initial[0]
 
-    # Add track
+    # Add track and immediately await (no wait_one_tick to avoid race condition)
     client.send_message("/live/song/create_midi_track", [-1])
-    wait_one_tick()
-    wait_one_tick()
-    wait_one_tick()
-
     response = client.await_message("/live/song/get/tracks", TICK_DURATION * 3)
     assert response is not None
     assert response[0] == initial_count + 1
 
     # Delete track to clean up
     client.send_message("/live/song/delete_track", [initial_count])
-    wait_one_tick()
-    wait_one_tick()
-    wait_one_tick()
-
     response = client.await_message("/live/song/get/tracks", TICK_DURATION * 3)
     assert response is not None
     assert response[0] == initial_count
@@ -240,20 +232,14 @@ def test_song_listen_scenes(client):
     assert initial is not None
     initial_count = initial[0]
 
-    # Add scene
+    # Add scene and immediately await (no wait_one_tick to avoid race condition)
     client.send_message("/live/song/create_scene", [-1])
-    wait_one_tick()
-    wait_one_tick()
-
     response = client.await_message("/live/song/get/scenes", TICK_DURATION * 3)
     assert response is not None
     assert response[0] == initial_count + 1
 
     # Delete scene to clean up
     client.send_message("/live/song/delete_scene", [initial_count])
-    wait_one_tick()
-    wait_one_tick()
-
     response = client.await_message("/live/song/get/scenes", TICK_DURATION * 3)
     assert response is not None
     assert response[0] == initial_count

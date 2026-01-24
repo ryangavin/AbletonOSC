@@ -138,7 +138,7 @@ class TrackHandler(AbletonOSCHandler):
             if listener_key in self.listener_functions:
                 self.logger.info("Removing send listener for track %d send %d" % (track_id, send_id))
                 try:
-                    send_param = track.mixer_device.sends[send_id]
+                    send_param = self.listener_objects[listener_key]
                     send_param.remove_value_listener(self.listener_functions[listener_key])
                     del self.listener_functions[listener_key]
                     del self.listener_objects[listener_key]
@@ -305,19 +305,23 @@ class TrackHandler(AbletonOSCHandler):
 
         parameter_object.add_value_listener(property_changed_callback)
         self.listener_functions[listener_key] = property_changed_callback
+        self.listener_objects[listener_key] = parameter_object
         #--------------------------------------------------------------------------------
         # Immediately send the current value
         #--------------------------------------------------------------------------------
         property_changed_callback()
 
     def _stop_mixer_listen(self, target, prop, params: Optional[Tuple[Any]] = ()) -> None:
-        parameter_object = getattr(target.mixer_device, prop)
         listener_key = (prop, tuple(params))
         if listener_key in self.listener_functions:
             self.logger.info("Removing listener for %s %s, property %s" % (self.class_identifier, str(params), prop))
-            listener_function = self.listener_functions[listener_key]
-            parameter_object.remove_value_listener(listener_function)
-            del self.listener_functions[listener_key]
+            try:
+                parameter_object = self.listener_objects[listener_key]
+                parameter_object.remove_value_listener(self.listener_functions[listener_key])
+                del self.listener_functions[listener_key]
+                del self.listener_objects[listener_key]
+            except Exception as e:
+                self.logger.warning("Exception removing mixer listener: %s" % e)
         else:
             self.logger.warning("No listener function found for property: %s (%s)" % (prop, str(params)))
 

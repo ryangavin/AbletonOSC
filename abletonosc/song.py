@@ -54,6 +54,7 @@ class SongHandler(AbletonOSCHandler):
             "arrangement_overdub",
             "back_to_arranger",
             "clip_trigger_quantization",
+            "count_in_duration",
             "current_song_time",
             "groove_amount",
             "is_ableton_link_enabled",
@@ -354,7 +355,7 @@ class SongHandler(AbletonOSCHandler):
         self.last_song_time = self.song.current_song_time
 
     def clear_api(self):
-        super().clear_api()
+        # Clean up beat listener (not managed by base class)
         try:
             self.song.remove_current_song_time_listener(self.current_song_time_changed)
         except:
@@ -377,3 +378,6 @@ class SongHandler(AbletonOSCHandler):
                 del self.listener_objects[listener_key]
             except:
                 pass
+        # Call parent after explicit cleanup (parent's _clear_listeners would fail
+        # on tracks/scenes since they use add_tracks_listener not add_listener)
+        super().clear_api()

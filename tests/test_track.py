@@ -62,11 +62,9 @@ def test_track_listen_send(client):
     assert initial[1] == send_id
     # initial[2] is the value
 
-    # Change value
+    # Change value and immediately await (no wait_one_tick to avoid race condition)
     new_value = 0.75
     client.send_message("/live/track/set/send", [track_id, send_id, new_value])
-    wait_one_tick()
-
     response = client.await_message("/live/track/get/send", TICK_DURATION * 2)
     assert response is not None
     assert response[0] == track_id
@@ -76,8 +74,6 @@ def test_track_listen_send(client):
     # Change to another value
     new_value = 0.25
     client.send_message("/live/track/set/send", [track_id, send_id, new_value])
-    wait_one_tick()
-
     response = client.await_message("/live/track/get/send", TICK_DURATION * 2)
     assert response is not None
     assert abs(response[2] - new_value) < 0.01

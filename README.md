@@ -542,6 +542,34 @@ Usage: /live/osc/command [params]
 ('1-MIDI', '2-MIDI', '3-Audio', '4-Audio')
 ```
 
+# Development
+
+## Deploy Script
+
+For development, use `deploy.sh` to copy the script to Ableton's Remote Scripts folder and trigger a hot reload:
+
+```bash
+./deploy.sh
+```
+
+This copies the required files to `~/Music/Ableton/User Library/Remote Scripts/AbletonOSC/` and sends a `/live/api/reload` OSC message to reload the script without restarting Ableton.
+
+## Running Tests
+
+Tests require a specific Ableton project setup:
+
+- **4 tracks**: 2 MIDI tracks, 2 Audio tracks (track index 2 needs audio input routed)
+- **8 scenes**: All empty
+- **2 return tracks**: A and B
+- **No devices** on tracks
+- **Count-in disabled**: In `Preferences > Record, Warp & Launch`, set `Count-In` to `None`
+
+Run tests with:
+
+```bash
+.venv/bin/pytest tests/ -v
+```
+
 # Acknowledgements
 
 Thanks to [Stu Fisher](https://github.com/stufisher/) (and other authors) for [LiveOSC](https://livecontrol.q3f.org/ableton-liveapi/liveosc/), the spiritual predecessor to this

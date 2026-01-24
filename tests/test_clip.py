@@ -10,6 +10,9 @@ import random
 #--------------------------------------------------------------------------------
 @pytest.fixture(scope="module", autouse=True)
 def _create_test_clips(client):
+    # Disable count-in so recording starts immediately (0 = None)
+    client.send_message("/live/song/set/count_in_duration", [0])
+
     midi_track_id = 0
     midi_clip_id = 0
     client.send_message("/live/clip_slot/create_clip", [midi_track_id, midi_clip_id, 8.0])
